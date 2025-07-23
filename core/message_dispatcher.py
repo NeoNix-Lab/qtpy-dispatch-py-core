@@ -1,5 +1,4 @@
 from typing import Dict
-
 from .message_envelope import MessageEnvelope
 from stream_message import StreamMessage
 
@@ -17,6 +16,6 @@ class MessageDispatcher:
 
     def dispatch(self, json_str: StreamMessage) -> None:
        if json_str.Command in self._envelopes:
-            registered = self._envelopes[envelope.name]
-            envelope.on_received = registered.on_received
-            envelope.invoke()
+            registered = self._envelopes[json_str.Command]
+            registered.update_from_json(json_str.Payload)
+            registered.invoke()

@@ -12,11 +12,12 @@ class MessageEnvelope:
 
     def __init__(
             self,
-            message: DynamicMessage,
-            on_received: Optional[Callable[[DynamicMessage], None]] = None
+            message: T,
+            on_received: Optional[Callable[[T], None]] = None
     ) -> None:
         self.message = message
         self.on_received = on_received
+        self._cls_type = type(message)
 
     @property
     def name(self) -> str:
@@ -38,14 +39,13 @@ class MessageEnvelope:
     def update_from_json(
             self,
             json_str: str,
-            msg_cls: Type[T]
     ) -> T:
         """
         Deserializza in msg, opzionalmente verifica il titolo,
         e sovrascrive self.message con la nuova istanza.
         """
         # 1) Deserializza correttamente
-        msg: T = msg_cls.from_json(json_str)  # da dataclasses-json :contentReference[oaicite:1]{index=1}
+        msg: T = self._cls_type.from_json(json_str)  # da dataclasses-json :contentReference[oaicite:1]{index=1}
 
         # 2) (Opzionale) sanity check – confronta con il titolo corrente
         if msg.title != self.message.title:

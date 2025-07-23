@@ -30,7 +30,7 @@ class SocketClientService:
             self.status = "disconnected"
             raise TimeoutError(f"Connect timed out after {self.timeout} seconds")
 
-    async def send(self, command: str, payload: str) -> Optional[dict]:
+    def send(self, command: str, payload: str) -> Optional[dict]:
         if not self.sock:
             self.status = "disconnected"
             raise ConnectionError("Socket is not connected.")
@@ -40,25 +40,27 @@ class SocketClientService:
         try:
             self.sock.sendall(message_bytes)
 
-            len_prefix = b""
-            while len(len_prefix) < 4:
-                chunk = self.sock.recv(4 - len(len_prefix))
-                if not chunk:
-                    return None
-                len_prefix += chunk
-            msg_len = struct.unpack("<I", len_prefix)[0]
+            data =self.receive()
 
-            data = b""
-            while len(data) < msg_len:
-                chunk = self.sock.recv(msg_len - len(data))
-                if not chunk:
-                    break
-                data += chunk
-
-            return json.loads(data.decode("utf-8"))
+            return json.loads(data)
         except socket.timeout:
             self.close()
             raise TimeoutError(f"Operation timed out after {self.timeout} seconds")
+
+    def _recv_exact(self, count: int) -> bytes:
+        buf = b""
+        while len(buf) < count:
+            chunk = self.sock.recv(count - len(buf))
+            if not chunk:
+                raise ConnectionError("Connection closed")
+            buf += chunk
+        return buf
+
+    def receive(self)-> str :
+        len_prefix = self._recv_exact(4)
+        msg_len = struct.unpack("<I", len_prefix)[0]
+        payload = self._recv_exact(msg_len)
+        return payload.decode("utf-8")
 
     def close(self) -> None:
         if self.sock:
