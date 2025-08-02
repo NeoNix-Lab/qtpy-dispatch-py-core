@@ -3,7 +3,7 @@ import json
 import struct
 from typing import Optional, Literal
 
-from stream_message import StreamMessage
+from .stream_message import StreamMessage
 
 
 class SocketClientService:
