@@ -1,8 +1,10 @@
 from pathlib import Path
 from datamodel_code_generator import InputFileType, generate
+import os
 
 def generate_models(schema_dir: Path, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    _append_init(out_dir)
     imports = []
     for schema_file in sorted(schema_dir.glob('*.json')):
         output_file = out_dir / f"{schema_file.stem}.py"
@@ -16,3 +18,10 @@ def generate_models(schema_dir: Path, out_dir: Path) -> None:
     if imports:
         with open(out_dir / '__init__.py', 'w') as f:
             f.write('\n'.join(imports) + '\n')
+
+
+def _append_init(dir_path: Path) -> None:
+    (dir_path / '__init__.py').write_text('')
+
+def get_shared_dir() -> Path:
+    return Path(os.environ['QT_SDK_PATH'])
