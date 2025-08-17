@@ -1,12 +1,10 @@
 """Facade for managing socket communication and message dispatching."""
 
 from __future__ import annotations
-
 import json
 import threading
 from threading import RLock
 from typing import Literal, Optional
-
 from core.dispatcher import Dispatcher
 from core.message_envelope import MessageEnvelope
 from core.socket_manager import SocketManager
