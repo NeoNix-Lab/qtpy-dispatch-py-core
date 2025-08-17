@@ -1,15 +1,19 @@
-import socket
+"""Client utilities for sending/receiving length-prefixed JSON messages."""
+
 import json
+import socket
 import struct
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 from .stream_message import StreamMessage
 
 
 class SocketClientService:
-    """A TCP client that sends and receives length-prefixed JSON messages."""
+    """A TCP client handling length-prefixed JSON messages."""
 
     def __init__(self, host: str, port: int, timeout: Optional[float] = None) -> None:
+        """Initialize connection parameters but do not connect."""
+
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -17,9 +21,13 @@ class SocketClientService:
         self.sock: Optional[socket.socket] = None
 
     def connect(self) -> None:
+        """Establish the TCP connection."""
+
         try:
             if self.timeout is not None:
-                self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
+                self.sock = socket.create_connection(
+                    (self.host, self.port), timeout=self.timeout
+                )
                 self.sock.settimeout(self.timeout)
             else:
                 self.sock = socket.create_connection((self.host, self.port))
@@ -31,6 +39,8 @@ class SocketClientService:
             raise TimeoutError(f"Connect timed out after {self.timeout} seconds")
 
     def send(self, command: str, payload: str) -> Optional[dict]:
+        """Send a command with payload and return a JSON response if any."""
+
         if not self.sock:
             self.status = "disconnected"
             raise ConnectionError("Socket is not connected.")
@@ -39,15 +49,17 @@ class SocketClientService:
 
         try:
             self.sock.sendall(message_bytes)
-
-            data =self.receive()
-
+            data = self.receive()
             return json.loads(data)
         except socket.timeout:
             self.close()
-            raise TimeoutError(f"Operation timed out after {self.timeout} seconds")
+            raise TimeoutError(
+                f"Operation timed out after {self.timeout} seconds"
+            )
 
     def _recv_exact(self, count: int) -> bytes:
+        """Read exactly ``count`` bytes from the socket."""
+
         buf = b""
         while len(buf) < count:
             chunk = self.sock.recv(count - len(buf))
@@ -56,13 +68,17 @@ class SocketClientService:
             buf += chunk
         return buf
 
-    def receive(self)-> str :
+    def receive(self) -> str:
+        """Receive a length-prefixed JSON message."""
+
         len_prefix = self._recv_exact(4)
         msg_len = struct.unpack("<I", len_prefix)[0]
         payload = self._recv_exact(msg_len)
         return payload.decode("utf-8")
 
     def close(self) -> None:
+        """Close the socket and reset the client state."""
+
         if self.sock:
             try:
                 self.sock.shutdown(socket.SHUT_RDWR)
